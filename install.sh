@@ -44,11 +44,61 @@ ensure_raycast() {
     fi
 }
 
-# Start focus session
+# Check if focus session is currently active
+is_focus_active() {
+    # Check if Raycast Focus UI elements are visible
+    # Look for focus-related processes or UI indicators
+    if pgrep -f "RaycastFocus" >/dev/null 2>&1; then
+        return 0
+    fi
+    
+    # Alternative: Check for focus session via AppleScript
+    local result=$(osascript -e '
+        tell application "System Events"
+            try
+                -- Look for Raycast focus indicators in menu bar or floating windows
+                if exists (processes where name is "Raycast") then
+                    tell process "Raycast"
+                        -- Check if focus session UI is visible
+                        if exists window "Raycast" then
+                            return "active"
+                        end if
+                        -- Check for focus menu bar item
+                        if exists menu bar item "Raycast" of menu bar 1 then
+                            return "active"
+                        end if
+                    end tell
+                end if
+                return "inactive"
+            on error
+                return "unknown"
+            end try
+        end tell
+    ' 2>/dev/null)
+    
+    if [[ "$result" == "active" ]]; then
+        return 0
+    else
+        return 1
+    fi
+}
+
+# Start focus session only if not already active
 start_focus() {
     ensure_raycast
+    
+    # Check if focus is already active to avoid annoying red glow
+    if is_focus_active; then
+        log "Focus session already active, skipping start"
+        return 0
+    fi
+    
+    log "Starting new focus session"
     local url="raycast://focus/start?goal=$FOCUS_GOAL&categories=$FOCUS_CATEGORIES&duration=$FOCUS_DURATION&mode=$FOCUS_MODE"
     open "$url" 2>/dev/null
+    
+    # Give it a moment to start
+    sleep 2
 }
 
 # Main monitoring loop
@@ -70,7 +120,12 @@ main() {
     start_focus
     
     while true; do
-        start_focus
+        # Only try to start focus if it's not already active
+        if ! is_focus_active; then
+            log "Focus session not active, starting..."
+            start_focus
+        fi
+        
         sleep $CHECK_INTERVAL
     done
 }
