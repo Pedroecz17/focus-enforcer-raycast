@@ -43,5 +43,5 @@ rm ~/Scripts/simple-enforced-focus.sh
 
 ### Requirements
 
-macOS
-Raycast installed
+- macOS only
+- Raycast 
