@@ -1,3 +1,5 @@
+This project is a Work in Progress!
+
 # Raycast Enforced Focus
 
 Automatically enforces Raycast focus sessions whenever your Mac is awake. Perfect for staying focused by blocking distracting websites and apps.
